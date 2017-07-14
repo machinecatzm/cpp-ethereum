@@ -83,19 +83,14 @@ ethash_calculate_dag_item(uint32_t start)
 		for (unsigned w = 0; w != 4; ++w) {
 			dag_node.uint4s[w] = fnv4(dag_node.uint4s[w], d_light[parent_index].uint4s[w]);
 		}
-#else
-		for (uint32_t t = 0; t < 4; t++) {
-			uint32_t shuffle_index = __shfl(parent_index, t, 4);
-			uint4 p4 = d_light[shuffle_index].uint4s[thread_id];
+#else	
+		uint32_t shuffle_index = __shfl(parent_index, thread_id, 4);
+		uint4 p4 = d_light[shuffle_index].uint4s[thread_id];
 
-			for (int w = 0; w < 4; w++) {
-				uint4 s4 = make_uint4(__shfl(p4.x, w, 4), __shfl(p4.y, w, 4), __shfl(p4.z, w, 4), __shfl(p4.w, w, 4));
-				if (t == thread_id) {
-					dag_node.uint4s[w] = fnv4(dag_node.uint4s[w], s4);
-				}
-			}
-
-		}
+		for (int w = 0; w < 4; w++) {
+			uint4 s4 = make_uint4(__shfl(p4.x, w, 4), __shfl(p4.y, w, 4), __shfl(p4.z, w, 4), __shfl(p4.w, w, 4));
+			dag_node.uint4s[w] = fnv4(dag_node.uint4s[w], s4);
+		}		
 #endif		
 	}
 	SHA3_512(dag_node.uint2s);
